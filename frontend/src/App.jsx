@@ -2,18 +2,57 @@ import { useState, useEffect } from 'react'
 import './index.css'
 
 function App() {
-  const [view, setView] = useState('list'); // 'list' or 'add'
+  const [view, setView] = useState('list'); // 'list' or 'form'
   const [members, setMembers] = useState([]);
+  const [editingMember, setEditingMember] = useState(null);
   
   // Dummy data until backend is fully hooked up
   useEffect(() => {
-    // In the future, this will be: fetch('http://localhost:8000/api/members')
     setMembers([
-      { id: 1, first_name: 'Ahmed', last_name: 'Ali', role: 'President', status: 'Active', phone_number: '555-0123' },
-      { id: 2, first_name: 'Omar', last_name: 'Farooq', role: 'Treasurer', status: 'Active', phone_number: '555-0124' },
-      { id: 3, first_name: 'Zaid', last_name: 'Khan', role: 'General Member', status: 'Inactive', phone_number: '555-0125' },
+      { id: 1, first_name: 'Ahmed', last_name: 'Ali', role: 'President', status: 'Active', phone_number: '555-0123', email: 'ahmed@example.com', address: '123 Main St', joined_date: '2023-01-15' },
+      { id: 2, first_name: 'Omar', last_name: 'Farooq', role: 'Treasurer', status: 'Active', phone_number: '555-0124', email: 'omar@example.com', address: '456 Side St', joined_date: '2023-02-20' },
+      { id: 3, first_name: 'Zaid', last_name: 'Khan', role: 'General Member', status: 'Inactive', phone_number: '555-0125', email: 'zaid@example.com', address: '789 Back St', joined_date: '2023-03-10' },
     ]);
   }, []);
+
+  const handleEditClick = (member) => {
+    setEditingMember(member);
+    setView('form');
+  };
+
+  const handleAddNewClick = () => {
+    setEditingMember(null);
+    setView('form');
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    // In the future, this will be an API call to Laravel (POST or PUT)
+    const formData = new FormData(e.target);
+    const memberData = {
+      first_name: formData.get('first_name'),
+      last_name: formData.get('last_name'),
+      phone_number: formData.get('phone_number'),
+      email: formData.get('email'),
+      address: formData.get('address'),
+      role: formData.get('role'),
+      status: formData.get('status') || 'Active', // Default to active for new
+      joined_date: formData.get('joined_date')
+    };
+
+    if (editingMember) {
+      // Update existing
+      setMembers(members.map(m => m.id === editingMember.id ? { ...memberData, id: editingMember.id, status: editingMember.status } : m));
+      alert('Member updated successfully (Mock)');
+    } else {
+      // Add new
+      setMembers([...members, { ...memberData, id: Date.now() }]);
+      alert('Member added successfully (Mock)');
+    }
+    
+    setView('list');
+  };
 
   return (
     <div className="app-container">
@@ -21,7 +60,7 @@ function App() {
         <h1>Mosque Committee</h1>
         <div>
           {view === 'list' ? (
-            <button className="btn" onClick={() => setView('add')}>+ Add Member</button>
+            <button className="btn" onClick={handleAddNewClick}>+ Add Member</button>
           ) : (
             <button className="btn btn-secondary" onClick={() => setView('list')}>← Back to List</button>
           )}
@@ -55,7 +94,11 @@ function App() {
                         </span>
                       </td>
                       <td>
-                        <button style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', marginRight: '1rem' }}>Edit</button>
+                        <button 
+                          onClick={() => handleEditClick(member)}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', marginRight: '1rem', fontWeight: '500' }}>
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -70,56 +113,69 @@ function App() {
           </div>
         ) : (
           <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h2 style={{ marginBottom: '1.5rem', fontWeight: '600' }}>Register New Member</h2>
-            <form onSubmit={(e) => { e.preventDefault(); alert('In the future, this will save to Laravel!'); setView('list'); }}>
+            <h2 style={{ marginBottom: '1.5rem', fontWeight: '600' }}>
+              {editingMember ? 'Edit Member' : 'Register New Member'}
+            </h2>
+            <form onSubmit={handleFormSubmit}>
               
               <div className="grid-2">
                 <div className="form-group">
                   <label>First Name</label>
-                  <input type="text" className="form-control" required placeholder="e.g. Ahmed" />
+                  <input type="text" name="first_name" className="form-control" required defaultValue={editingMember?.first_name || ''} placeholder="e.g. Ahmed" />
                 </div>
                 <div className="form-group">
                   <label>Last Name</label>
-                  <input type="text" className="form-control" required placeholder="e.g. Ali" />
+                  <input type="text" name="last_name" className="form-control" required defaultValue={editingMember?.last_name || ''} placeholder="e.g. Ali" />
                 </div>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
                   <label>Phone Number</label>
-                  <input type="tel" className="form-control" placeholder="e.g. +1 555-0123" />
+                  <input type="tel" name="phone_number" className="form-control" defaultValue={editingMember?.phone_number || ''} placeholder="e.g. +1 555-0123" />
                 </div>
                 <div className="form-group">
                   <label>Email Address</label>
-                  <input type="email" className="form-control" placeholder="ahmed@example.com" />
+                  <input type="email" name="email" className="form-control" defaultValue={editingMember?.email || ''} placeholder="ahmed@example.com" />
                 </div>
               </div>
 
               <div className="form-group">
                 <label>Home Address</label>
-                <textarea className="form-control" rows="2" placeholder="Full residential address"></textarea>
+                <textarea name="address" className="form-control" rows="2" defaultValue={editingMember?.address || ''} placeholder="Full residential address"></textarea>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
                   <label>Committee Role</label>
-                  <select className="form-control" defaultValue="General Member">
-                    <option>President</option>
-                    <option>Vice President</option>
-                    <option>Treasurer</option>
-                    <option>Secretary</option>
-                    <option>General Member</option>
+                  <select name="role" className="form-control" defaultValue={editingMember?.role || 'General Member'}>
+                    <option value="President">President</option>
+                    <option value="Vice President">Vice President</option>
+                    <option value="Treasurer">Treasurer</option>
+                    <option value="Secretary">Secretary</option>
+                    <option value="General Member">General Member</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Joining Date</label>
-                  <input type="date" className="form-control" />
+                  <input type="date" name="joined_date" className="form-control" defaultValue={editingMember?.joined_date || ''} />
                 </div>
               </div>
 
+              {/* Status field is only really useful to edit for existing members */}
+              {editingMember && (
+                <div className="form-group">
+                  <label>Status</label>
+                  <select name="status" className="form-control" defaultValue={editingMember.status}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setView('list')}>Cancel</button>
-                <button type="submit" className="btn">Save Member</button>
+                <button type="submit" className="btn">{editingMember ? 'Update Member' : 'Save Member'}</button>
               </div>
             </form>
           </div>
